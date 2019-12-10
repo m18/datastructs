@@ -30,3 +30,31 @@ Prints:
        /¯\            
       7   8            
 ```
+
+### Stack
+Example:
+```
+package main
+ 
+import (
+    "fmt"
+    "github.com/m18/datastructs"
+)
+
+func main() {
+    st := datastructs.NewStack(1, 2)
+    st.Push(3)
+
+    fmt.Println(st.Peek())
+    fmt.Println(st)
+    fmt.Println(st.Pop())
+    fmt.Println(st)
+}
+```
+Prints:
+```
+3
+[1 2 3]
+3
+[1 2]
+```
