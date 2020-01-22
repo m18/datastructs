@@ -7,18 +7,23 @@ import (
 	"strings"
 )
 
-var EmptyInputErr = errors.New("empty input")
-var InvalidInputErr = errors.New("invalid input")
+// ErrEmptyInput is an empty input error
+var ErrEmptyInput = errors.New("empty input")
 
+// ErrInvalidInput is an invalid input error
+var ErrInvalidInput = errors.New("invalid input")
+
+// BinaryTreeNode is a representation of a node of a binary tree
 type BinaryTreeNode struct {
 	Left  *BinaryTreeNode
 	Right *BinaryTreeNode
 	Value int
 }
 
+// NewBinaryTree returns a new binary tree; it also returns an error if the initial values cannot be used to construct a binary tree
 func NewBinaryTree(vals ...interface{}) (res *BinaryTreeNode, err error) {
 	if len(vals) == 0 {
-		return nil, EmptyInputErr
+		return nil, ErrEmptyInput
 	}
 	if res, err = createNode(vals[0]); err != nil {
 		return
@@ -48,10 +53,10 @@ func buildTree(nodes []*BinaryTreeNode, level int, vals []interface{}) (err erro
 		node := nodes[i/2]
 		if node == nil {
 			prevOffset := 1<<(level-1) - 1
-			parentIndex := prevOffset + count/2
+			parentIndex := prevOffset + i/2
 			return indexError(
 				i+offset,
-				fmt.Errorf("parent node at index %d is nil: %w", parentIndex, InvalidInputErr),
+				fmt.Errorf("parent node at index %d is nil: %w", parentIndex, ErrInvalidInput),
 			)
 		}
 		if i%2 == 0 {
@@ -75,7 +80,7 @@ func createNode(val interface{}) (*BinaryTreeNode, error) {
 	if v, ok := val.(int); ok {
 		return &BinaryTreeNode{Value: v}, nil
 	}
-	return nil, fmt.Errorf("unexpected value: %[1]v (%[1]T): %w", val, InvalidInputErr)
+	return nil, fmt.Errorf("unexpected value: %[1]v (%[1]T): %w", val, ErrInvalidInput)
 }
 
 func (node *BinaryTreeNode) String() string {

@@ -17,18 +17,20 @@ func main() {
         // handle the error here
         return
     }
+    fmt.Println(bt.Value, bt.Left.Value, bt.Right.Value)
     fmt.Println(bt)
 }
 ```
 Prints:
 ```
+1 2 3
            1
       /¯¯¯¯¯¯¯¯¯\
      2           3
       ¯\       /¯¯¯\
         4     5     6
        /¯\            
-      7   8            
+      7   8             
 ```
 
 ### Stack
@@ -42,19 +44,54 @@ import (
 )
 
 func main() {
-    st := datastructs.NewStack(1, 2)
-    st.Push(3)
+	s := datastructs.NewStack(1, 2)
+	s.Push(3)
 
-    fmt.Println(st.Peek())
-    fmt.Println(st)
-    fmt.Println(st.Pop())
-    fmt.Println(st)
+	for {
+		v, ok := s.Pop()
+		fmt.Println(v, ok)
+		if !ok {
+			break
+		}
+	}
 }
 ```
 Prints:
 ```
-3
-[1 2 3]
-3
-[1 2]
+3 true
+2 true
+1 true
+0 false
+```
+
+### Heap
+Example:
+```
+package main
+ 
+import (
+    "fmt"
+    "github.com/m18/datastructs"
+)
+
+func main() {
+	h := datastructs.NewMinHeap(5, 2, 4)
+	h.Push(3)
+
+	for {
+		v, ok := h.Pop()
+		fmt.Println(v, ok)
+		if !ok {
+			break
+		}
+	}
+}
+```
+Prints:
+```
+2 true
+3 true
+4 true
+5 true
+0 false
 ```
