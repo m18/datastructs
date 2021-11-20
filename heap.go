@@ -1,139 +1,123 @@
 package datastructs
 
-import (
-	"math"
-)
-
-// Heap is a binary tree-based implementation of the Heap data structure
 type Heap struct {
-	items   []int
-	compare func(n, to int) bool
+	capacity int
+	items    []int
+	compare  func(i, j int) bool
 }
 
-// NewMinHeap returns a new min-heap
-func NewMinHeap(vals ...int) *Heap {
-	return newHeap(func(n, to int) bool { return n < to }, vals...)
+// NewMinHeap returns a new min-heap. `capacity` == 0 means unbounded.
+func NewMinHeap(capacity int, items ...int) *Heap {
+	return newHeap(
+		capacity,
+		func(x, y int) bool { return x < y },
+		items...,
+	)
 }
 
-// NewMaxHeap creates a new max-heap
-func NewMaxHeap(vals ...int) *Heap {
-	return newHeap(func(n, to int) bool { return n > to }, vals...)
+// NewMaxHeap returns a new max-heap. `capacity` == 0 means unbounded.
+func NewMaxHeap(capacity int, items ...int) *Heap {
+	return newHeap(
+		capacity,
+		func(x, y int) bool { return x > y },
+		items...,
+	)
 }
 
-func newHeap(c func(n, to int) bool, vals ...int) *Heap {
-	res := &Heap{compare: c}
-	for _, n := range vals {
-		res.Push(n)
-	}
-	return res
-}
-
-// Size returns the number of values in the heap
+// Size returns the number of items on the heap.
 func (h *Heap) Size() int {
 	return len(h.items)
 }
 
-// Peek returns the item from the top of the heap; it also returns a bool indicating whether the heap is empty or not
-func (h *Heap) Peek() (int, bool) {
-	if h.Size() == 0 {
-		return 0, false
-	}
-	return h.items[0], true
-}
-
-// Pop removes the value from the top of the heap and returns it; it also returns a bool indicating whether the heap is empty or not
-func (h *Heap) Pop() (int, bool) {
-	res, ok := h.Peek()
-	if !ok {
-		return 0, false
-	}
-	h.items[0] = h.items[h.Size()-1]
-	h.items = h.items[:h.Size()-1]
-	h.heapifyDown()
-	return res, true
-}
-
-// Push adds a value to the heap
-func (h *Heap) Push(n int) {
-	h.items = append(h.items, n)
+// Push adds item onto the heap.
+func (h *Heap) Push(item int) {
+	h.items = append(h.items, item)
 	h.heapifyUp()
+	if h.capacity > 0 && len(h.items) > h.capacity {
+		h.shrink()
+	}
+}
+
+// Peek returns the top element of the heap. It will panic if the heap is empty.
+func (h *Heap) Peek() int {
+	return h.items[0]
+}
+
+// Pop removes the top element of the heap and returns it. It will panic if the heap is empty.
+func (h *Heap) Pop() int {
+	res := h.items[0]
+	h.items[0] = h.items[len(h.items)-1]
+	h.shrink()
+	h.heapifyDown(0)
+	return res
+}
+
+func newHeap(capacity int, compare func(x, y int) bool, items ...int) *Heap {
+	res := &Heap{
+		capacity: capacity,
+	}
+	res.compare = func(i, j int) bool {
+		return compare(res.items[i], res.items[j])
+	}
+	for _, item := range items {
+		res.Push(item)
+	}
+	return res
+}
+
+func (h *Heap) parentIndex(i int) int {
+	return (i - 1) / 2
+}
+
+func (h *Heap) leftChildIndex(i int) int {
+	return i*2 + 1
+}
+
+func (h *Heap) rightChildIndex(i int) int {
+	return i*2 + 2
+}
+
+func (h *Heap) isLeaf(i int) bool {
+	return i+1 > len(h.items)/2
+}
+
+func (h *Heap) swap(i, j int) {
+	h.items[i], h.items[j] = h.items[j], h.items[i]
+}
+
+func (h *Heap) shrink() {
+	h.items = h.items[:len(h.items)-1]
 }
 
 func (h *Heap) heapifyUp() {
-	if h.Size() == 0 {
+	i := len(h.items) - 1
+	for pi := h.parentIndex(i); i > 0 && h.compare(i, pi); pi = h.parentIndex(i) {
+		h.swap(i, pi)
+		i = pi
+	}
+}
+
+func (h *Heap) heapifyDown(i int) {
+	if h.isLeaf(i) {
 		return
 	}
-	idx := h.Size() - 1
-	for {
-		parentIdx := h.parentIndex(idx)
-		if parentIdx == -1 || !h.checkSwap(idx, parentIdx, false) {
-			break
-		}
-		idx = parentIdx
+	li := h.leftChildIndex(i)
+	ri := h.rightChildIndex(i)
+	// no right child:
+	// because heap is a `complete` binary tree,
+	// non-leaf nodes will always have the left child,
+	// but not necessarily the right one (there will be 1 such node)
+	if ri > len(h.items)-1 {
+		ri = -1
 	}
-}
-
-func (h *Heap) heapifyDown() {
-	if h.Size() == 0 {
+	if h.compare(i, li) && (ri == -1 || h.compare(i, ri)) {
 		return
 	}
-	idx := 0
-	for {
-		lChildIdx, rChildIdx := h.childIndices(idx)
-		if lChildIdx > h.Size()-1 {
-			break
-		}
-		childIdx := lChildIdx
-		if rChildIdx <= h.Size()-1 && h.compare(h.items[rChildIdx], h.items[lChildIdx]) {
-			childIdx = rChildIdx
-		}
-		if !h.checkSwap(idx, childIdx, true) {
-			break
-		}
-		idx = childIdx
+	if ri == -1 || h.compare(li, ri) {
+		h.swap(i, li)
+		h.heapifyDown(li)
+	} else {
+		h.swap(i, ri)
+		h.heapifyDown(ri)
 	}
-}
-
-// checkSwap checks if two nodes need to be swapped, and performs the operation if needed, in which case true is returned
-func (h *Heap) checkSwap(idx1, idx2 int, reverse bool) bool {
-	if reverse == h.compare(h.items[idx1], h.items[idx2]) {
-		return false
-	}
-	h.items[idx1], h.items[idx2] = h.items[idx2], h.items[idx1]
-	return true
-}
-
-// parentIndex returns a slice index that corresponds to the parent node of a binary tree node represented by the element of the slice at index idx
-func (h *Heap) parentIndex(idx int) int {
-	level, idxInLevel := h.nodePosition(idx)
-	if level <= 0 {
-		return -1
-	}
-	prevLevelOffset := 1<<(level-1) - 1
-	parentIndex := prevLevelOffset + idxInLevel/2
-	return parentIndex
-}
-
-func (h *Heap) childIndices(idx int) (int, int) {
-	level, idxInLevel := h.nodePosition(idx)
-	if level < 0 {
-		return -1, -1
-	}
-	rChildIdxInLevel := (idxInLevel+1)*2 - 1
-	lChildIdxInLevel := rChildIdxInLevel - 1
-	nextLevelOffset := 1<<(level+1) - 1
-	return nextLevelOffset + lChildIdxInLevel, nextLevelOffset + rChildIdxInLevel
-}
-
-func (h *Heap) nodePosition(idx int) (int, int) {
-	if idx < 0 {
-		return -1, -1
-	}
-	if idx == 0 {
-		return 0, 0
-	}
-	// level is zero-based
-	level := int(math.Sqrt(float64(idx + 1)))
-	idxInLevel := idx - (1<<level - 1)
-	return level, idxInLevel
 }
